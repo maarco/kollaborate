@@ -41,12 +41,14 @@ kollaborate start 3 2  # 3 task agents, 2 spec agents
 
 ## Features
 
+- **Multi-LLM Support**: Switch between Claude, Gemini, Crush, Codex, OpenCode, Cursor with one command
 - **17 Typed Task System**: Specialized prompts for features, refactors, bugs, tests, docs, performance, architecture, security, hotfixes, migrations, integrations, chores, experiments, UX, validation, workflows, and exploration
 - **Parallel Agent Execution**: Multiple agents work simultaneously on different tasks
 - **Automatic Spec Generation**: Agents create detailed specifications before implementation
 - **Activity Monitoring**: 3-strike idle detection with automatic cleanup
 - **Task State Management**: NEW → WORKING → DONE/QA workflow
 - **Global Installation**: Runs from ~/.kollaborate without per-project file copying
+- **TMUX Orchestration**: Full agent lifecycle management with tglm, tlist, tcapture, tmsg, tstop
 
 ## Task Types
 
@@ -75,6 +77,13 @@ kollaborate start 3 2  # 3 task agents, 2 spec agents
 ```bash
 # Initialize in current directory
 kollaborate init
+
+# Switch LLM backend
+kollaborate use              # Show current backend and options
+kollaborate use gemini       # Switch to Google Gemini
+kollaborate use claude       # Switch to Anthropic Claude
+kollaborate use crush        # Switch to Crush AI
+kollaborate use codex        # Switch to Codex
 
 # Start daemon with 3 task agents and 2 spec agents
 kollaborate start 3 2
@@ -125,17 +134,36 @@ your-project/
     └── T03-integration-tests.md
 ```
 
+## Multi-LLM Backend Support
+
+Kollaborate supports multiple LLM CLI tools through the unified `glm` wrapper:
+
+| Backend | CLI | Auto-Accept Flag | Command |
+|---------|-----|------------------|---------|
+| Claude | `claude` | `--dangerously-skip-permissions` | `kollaborate use claude` |
+| Gemini | `gemini` | `--yolo` | `kollaborate use gemini` |
+| Crush | `crush` | `--yolo` | `kollaborate use crush` |
+| Codex | `codex` | `--sandbox danger-full-access` | `kollaborate use codex` |
+| OpenCode | `opencode` | (none) | `kollaborate use opencode` |
+| Cursor | `cursor` | (generic) | `kollaborate use cursor` |
+
+Switch backends anytime:
+```bash
+kollaborate use gemini    # Switch to Gemini
+glm "your prompt"         # Uses current backend
+```
+
 ## Agent System Integration
 
-Kollaborate is agent-agnostic but defaults to `tglm` commands. The framework uses these command patterns:
+Kollaborate uses TMUX-based agent orchestration with these commands:
 
-- `tglm "$agent_name" "$prompt"` - Spawn agent
+- `tglm "$agent_name" "$prompt"` - Spawn agent session
 - `tlist` - List active agents
-- `tcapture "$agent"` - Get agent output
-- `tmsg "$agent" "$message"` - Send message
+- `tcapture "$agent"` - View agent output
+- `tmsg "$agent" "$message"` - Send message to agent
 - `tstop "$agent"` - Terminate agent
 
-To adapt for different agent systems, modify the command patterns in `kollaborate.sh`.
+All commands work with any configured LLM backend.
 
 ## Configuration
 

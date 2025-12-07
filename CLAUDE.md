@@ -85,6 +85,13 @@ The same install.sh script works for both methods, automatically detecting wheth
 # Initialize Kollaborate in a project
 kollaborate init
 
+# Switch LLM backend
+kollaborate use                  # Show current backend and options
+kollaborate use gemini           # Switch to Google Gemini
+kollaborate use claude           # Switch to Anthropic Claude
+kollaborate use crush            # Switch to Crush AI
+kollaborate use codex            # Switch to Codex
+
 # Start the agent watcher daemon (3 task agents, 2 spec agents)
 kollaborate start 3 2
 
