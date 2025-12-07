@@ -120,6 +120,32 @@ Tasks in `TASK_TRACKING.md` use typed prefixes with state and sequential numberi
 
 Each task type maintains its own sequential numbering (F1, F2... R1, R2... T1, T2...) and must include explicit file targets.
 
+## Typed Task System Architecture
+
+The typed task system provides specialized agent prompts for each task type:
+
+### Type-Specific Agent Behavior
+
+Each task type receives a unique prompt template with specialized requirements:
+
+- **TEST (T##)**: Requires >80% coverage, edge cases, error paths, all tests passing
+- **REFACTOR (R##)**: Must preserve behavior, improve structure, maintain API contracts
+- **SECURITY (S##)**: OWASP Top 10 compliance, threat modeling, vulnerability testing
+- **PERFORMANCE (P##)**: Benchmark before/after, profile bottlenecks, measure improvements
+- **HOTFIX (H##)**: Minimal invasive changes, surgical precision, rollback plan required
+- **INTEGRATION (I##)**: API contract testing, error handling, retry logic, timeouts
+- **WORKFLOW (W##)**: CI/CD pipeline validation, deployment automation, rollback procedures
+
+### Agent Prompt Routing
+
+When `spawn_agent()` is called:
+1. Extract task type from task ID (e.g., T1 → T, F23 → F)
+2. Route to specialized prompt generator: `generate_test_prompt()`, `generate_feature_prompt()`, etc.
+3. Inject type-specific requirements and constraints
+4. Agent receives tailored protocol for task type
+
+This ensures agents follow domain-specific best practices automatically.
+
 ## Critical Agent Protocol Rules
 
 When spawning agents or generating specs, these constraints are **mandatory**:
