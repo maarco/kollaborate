@@ -58,6 +58,8 @@ if [[ "$INSTALL_METHOD" == "local" ]]; then
     cp "$SOURCE_DIR/kollaborate" "$INSTALL_DIR/kollaborate"
     cp "$SOURCE_DIR/kollaborate.sh" "$INSTALL_DIR/kollaborate.sh"
     cp "$SOURCE_DIR/kollaborate.md" "$INSTALL_DIR/kollaborate.md"
+    cp "$SOURCE_DIR/kollab-commands.sh" "$INSTALL_DIR/kollab-commands.sh"
+    cp "$SOURCE_DIR/glm-setup.sh" "$INSTALL_DIR/glm-setup.sh"
     echo -e "${LIME}    Copied from $SOURCE_DIR${RESET}"
 else
     # Download from remote
@@ -65,10 +67,14 @@ else
         curl -fsSL "$REPO_URL/kollaborate" -o "$INSTALL_DIR/kollaborate"
         curl -fsSL "$REPO_URL/kollaborate.sh" -o "$INSTALL_DIR/kollaborate.sh"
         curl -fsSL "$REPO_URL/kollaborate.md" -o "$INSTALL_DIR/kollaborate.md"
+        curl -fsSL "$REPO_URL/kollab-commands.sh" -o "$INSTALL_DIR/kollab-commands.sh"
+        curl -fsSL "$REPO_URL/glm-setup.sh" -o "$INSTALL_DIR/glm-setup.sh"
     elif command -v wget &> /dev/null; then
         wget -q "$REPO_URL/kollaborate" -O "$INSTALL_DIR/kollaborate"
         wget -q "$REPO_URL/kollaborate.sh" -O "$INSTALL_DIR/kollaborate.sh"
         wget -q "$REPO_URL/kollaborate.md" -O "$INSTALL_DIR/kollaborate.md"
+        wget -q "$REPO_URL/kollab-commands.sh" -O "$INSTALL_DIR/kollab-commands.sh"
+        wget -q "$REPO_URL/glm-setup.sh" -O "$INSTALL_DIR/glm-setup.sh"
     else
         echo -e "${CYAN}[!] Error: curl or wget required for remote installation${RESET}"
         exit 1
@@ -78,6 +84,8 @@ fi
 
 chmod +x "$INSTALL_DIR/kollaborate"
 chmod +x "$INSTALL_DIR/kollaborate.sh"
+chmod +x "$INSTALL_DIR/kollab-commands.sh"
+chmod +x "$INSTALL_DIR/glm-setup.sh"
 
 # Add to shell config if not already present
 if ! grep -q "KOLLABORATE_HOME" "$SHELL_RC" 2>/dev/null; then
@@ -85,12 +93,18 @@ if ! grep -q "KOLLABORATE_HOME" "$SHELL_RC" 2>/dev/null; then
     echo "# Kollaborate - Autonomous Multi-Agent Development Framework" >> "$SHELL_RC"
     echo "export KOLLABORATE_HOME=\"$INSTALL_DIR\"" >> "$SHELL_RC"
     echo "export PATH=\"\$KOLLABORATE_HOME:\$PATH\"" >> "$SHELL_RC"
+    echo "" >> "$SHELL_RC"
+    echo "# Source Kollaborate components" >> "$SHELL_RC"
+    echo "source \"\$KOLLABORATE_HOME/glm-setup.sh\"" >> "$SHELL_RC"
+    echo "source \"\$KOLLABORATE_HOME/kollab-commands.sh\"" >> "$SHELL_RC"
 
     echo ""
     echo -e "${LIME}[+] Added to $SHELL_RC${RESET}"
     echo ""
     echo -e "${LIME}    export KOLLABORATE_HOME=\"$INSTALL_DIR\"${RESET}"
     echo -e "${LIME}    export PATH=\"\$KOLLABORATE_HOME:\$PATH\"${RESET}"
+    echo -e "${LIME}    source glm-setup.sh${RESET}"
+    echo -e "${LIME}    source kollab-commands.sh${RESET}"
 else
     echo ""
     echo -e "${CYAN}[!] $SHELL_RC already configured${RESET}"
@@ -102,7 +116,18 @@ echo ""
 echo "Installed files:"
 echo "  - ${CYAN}$INSTALL_DIR/kollaborate${RESET} (CLI)"
 echo "  - ${CYAN}$INSTALL_DIR/kollaborate.sh${RESET} (Daemon)"
+echo "  - ${CYAN}$INSTALL_DIR/kollab-commands.sh${RESET} (Agent commands)"
+echo "  - ${CYAN}$INSTALL_DIR/glm-setup.sh${RESET} (LLM wrapper)"
 echo "  - ${CYAN}$INSTALL_DIR/kollaborate.md${RESET} (Template)"
+echo ""
+echo "Commands available:"
+echo "  ${LIME}kollaborate${RESET}     - Main CLI (init, start, status, add)"
+echo "  ${LIME}tglm${RESET}            - Create agent sessions"
+echo "  ${LIME}tlist${RESET}           - List active agents"
+echo "  ${LIME}tcapture${RESET}        - View agent output"
+echo "  ${LIME}tmsg${RESET}            - Send message to agent"
+echo "  ${LIME}tstop${RESET}           - Stop agent"
+echo "  ${LIME}glm_use${RESET}         - Switch LLM backend (claude/gemini/opencode)"
 echo ""
 echo "To use immediately, run:"
 echo -e "    ${CYAN}source $SHELL_RC${RESET}"
