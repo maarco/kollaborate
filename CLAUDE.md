@@ -34,19 +34,48 @@ BLOCKED  ← (recycled if agent goes idle)
 ### Key Files Structure
 
 ```
-kollaborate/
+~/.kollaborate/           # Global installation
 ├── kollaborate           # CLI entry point (zsh script)
 ├── kollaborate.sh        # Agent watcher daemon
-├── kollaborate.md        # Framework documentation template
-└── install.sh            # PATH installation script
+└── kollaborate.md        # Framework documentation template
+
+kollaborate-repo/         # Source repository
+├── kollaborate           # CLI source
+├── kollaborate.sh        # Daemon source
+├── kollaborate.md        # Documentation template
+└── install.sh            # Smart installer (works locally and remotely)
 
 project-using-kollaborate/
 ├── TASK_TRACKING.md      # Task state manifest
-├── specs/                # Generated specifications
-│   └── R##-task-name.md
-└── .kollaborate/         # Runtime files
-    └── kollaborate.sh    # Copied daemon
+└── specs/                # Generated specifications
+    └── TYPE##-task-name.md
 ```
+
+## Installation
+
+### Remote Installation (Recommended)
+
+```bash
+# Install via curl to ~/.kollaborate
+curl -fsSL https://raw.githubusercontent.com/yourusername/kollaborate/main/install.sh | zsh
+
+# Reload shell configuration
+source ~/.zshrc  # or ~/.bashrc
+```
+
+### Local Installation
+
+```bash
+# Clone repository and run installer
+git clone https://github.com/yourusername/kollaborate.git
+cd kollaborate
+./install.sh
+
+# Reload shell configuration
+source ~/.zshrc  # or ~/.bashrc
+```
+
+The same install.sh script works for both methods, automatically detecting whether it's running locally or via curl and installing to `~/.kollaborate`.
 
 ## Development Commands
 
@@ -54,24 +83,24 @@ project-using-kollaborate/
 
 ```bash
 # Initialize Kollaborate in a project
-./kollaborate init
+kollaborate init
 
 # Start the agent watcher daemon (3 task agents, 2 spec agents)
-./kollaborate start 3 2
+kollaborate start 3 2
 
 # Check status
-./kollaborate status
+kollaborate status
 
 # Add a new task (with type)
-./kollaborate add feature "Implement user profile page" src/pages/Profile.js
-./kollaborate add test "Add unit tests for auth" src/tests/auth.test.js
-./kollaborate add refactor "Clean up API handlers" src/api/handlers.js
+kollaborate add feature "Implement user profile page" src/pages/Profile.js
+kollaborate add test "Add unit tests for auth" src/tests/auth.test.js
+kollaborate add refactor "Clean up API handlers" src/api/handlers.js
 
 # Add task (defaults to refactor type if no type specified)
-./kollaborate add "Task description (file: path/to/file.ext)"
+kollaborate add "Task description (file: path/to/file.ext)"
 
 # Show help
-./kollaborate help
+kollaborate help
 ```
 
 ### Agent Management (via external agent system like tglm)

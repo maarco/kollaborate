@@ -5,6 +5,54 @@
 setopt NULL_GLOB  # Don't error on unmatched globs
 source ~/.zshrc 2>/dev/null
 
+# MAXIMUM BRIGHTNESS - Lime and Cyan theme with BOLD
+CYAN='\033[1;38;2;0;255;255m'    # BOLD + Maximum bright cyan (RGB)
+LIME='\033[1;38;2;0;255;0m'      # BOLD + Maximum bright lime green (RGB)
+NC='\033[0m'
+
+# Generate gradient color between cyan (0,255,255) and lime (0,255,0)
+# Usage: gradient_color <position> where position is 0.0 (cyan) to 1.0 (lime)
+gradient_color() {
+    local pos=$1
+    # Cyan: RGB(0, 255, 255)
+    # Lime: RGB(0, 255, 0)
+    # Only blue channel changes from 255 to 0
+
+    local blue=$(printf "%.0f" $(echo "255 * (1 - $pos)" | bc -l))
+    echo "\033[1;38;2;0;255;${blue}m"
+}
+
+# Log prefix colors (gradient mapping)
+log_color() {
+    case "$1" in
+        "INIT"|"STAT") gradient_color 0.0 ;;      # Cyan (start)
+        "STEP") gradient_color 0.11 ;;
+        "SPEC") gradient_color 0.22 ;;
+        "SPWN"|"SYNC") gradient_color 0.33 ;;
+        "OKAY"|"MNTR") gradient_color 0.5 ;;      # Middle
+        "CHCK"|"RMND") gradient_color 0.66 ;;
+        "GENR"|"WAIT") gradient_color 0.77 ;;
+        "CLEN"|"RCYL") gradient_color 0.88 ;;
+        "IDLE"|"BLOK"|"PLCH") gradient_color 1.0 ;;  # Lime (end)
+        "CYCL") echo "$CYAN" ;;
+        *) echo "$NC" ;;
+    esac
+}
+
+# Enhanced echo with gradient colors
+gecho() {
+    local line="$1"
+    # Extract prefix (e.g., [INIT], [SPWN], etc.)
+    if [[ "$line" =~ ^\[([A-Z]+)\] ]]; then
+        local prefix="${match[1]}"
+        local color=$(log_color "$prefix")
+        local message="${line#*] }"
+        echo -e "${color}[${prefix}]${NC} ${message}"
+    else
+        echo "$line"
+    fi
+}
+
 # Store warning counts for each agent
 declare -A AGENT_WARNINGS
 
@@ -31,16 +79,17 @@ fi
 
 # Create specs directory if it doesn't exist
 if [ ! -d "$SPECS_DIR" ]; then
-    echo "[INIT] Creating specs directory: $SPECS_DIR"
+    gecho "[INIT] Creating specs directory: $SPECS_DIR"
     mkdir -p "$SPECS_DIR"
 fi
 
-echo "[INIT] =========================================="
-echo "[INIT] AGENT WATCHER DAEMON"
-echo "[INIT] Max agents: $MAX_AGENTS | Max spec agents: $MAX_SPEC_AGENTS"
-echo "[INIT] Check interval: ${CHECK_INTERVAL}s"
-echo "[INIT] Monitoring: $KOLLABORATE_MD"
-echo "[INIT] =========================================="
+echo -e "${CYAN}=========================================="
+echo -e "${CYAN}   AGENT WATCHER DAEMON${NC}"
+echo -e "${CYAN}==========================================${NC}"
+echo -e "Max agents: ${LIME}$MAX_AGENTS${NC} | Spec agents: ${LIME}$MAX_SPEC_AGENTS${NC}"
+echo -e "Check interval: ${LIME}${CHECK_INTERVAL}s${NC}"
+echo -e "Monitoring: ${CYAN}$KOLLABORATE_MD${NC}"
+echo -e "${CYAN}==========================================${NC}"
 
 get_task_type() {
     local task_id="$1"
@@ -886,7 +935,7 @@ spawn_agent() {
     local task_num=$(echo "$task_line" | sed -n 's/.*\([FRBDTPASHMICEUVWX][0-9]\{1,\}\).*/\1/p')
 
     if [ -z "$task_num" ]; then
-        echo "[WARN] No task number found in: $task_line"
+        gecho "[WARN] No task number found in: $task_line"
         return 1
     fi
 
@@ -901,9 +950,9 @@ spawn_agent() {
 
     if [ "$spec_exists" = false ] || is_spec_placeholder "$task_num"; then
         if [ "$spec_exists" = false ]; then
-            echo "[BLOK] $task_num - No spec found, skipping agent spawn (waiting for spec generation)"
+            gecho "[BLOK] $task_num - No spec found, skipping agent spawn (waiting for spec generation)"
         else
-            echo "[BLOK] $task_num - Placeholder spec found, skipping agent spawn (waiting for spec completion)"
+            gecho "[BLOK] $task_num - Placeholder spec found, skipping agent spawn (waiting for spec completion)"
         fi
         # Ensure a spec agent is spawned for this task (if under limit)
         if ! tlist 2>/dev/null | grep -q "SPEC-$task_num"; then
@@ -911,13 +960,13 @@ spawn_agent() {
             if [ "$current_spec_count" -lt "$MAX_SPEC_AGENTS" ]; then
                 spawn_spec_agent "$task_num"
             else
-                echo "[BLOK] $task_num - Spec agent limit reached ($MAX_SPEC_AGENTS), deferring"
+                gecho "[BLOK] $task_num - Spec agent limit reached ($MAX_SPEC_AGENTS), deferring"
             fi
         fi
         return 1
     fi
 
-    echo "[SPWN] $task_num [$task_type_name] - $(echo $task_line | cut -c1-50)..."
+    gecho "[SPWN] $task_num [$task_type_name] - $(echo $task_line | cut -c1-50)..."
 
     # Generate type-specific prompt
     local prompt_template
@@ -1038,7 +1087,7 @@ spawn_spec_agent() {
     local task_line=$(cat "$KOLLABORATE_MD" | grep "^NEW: $task_num -")
     local task_desc=$(echo "$task_line" | sed "s/NEW: $task_num - //" | sed 's/ (file:.*$//')
 
-    echo "[SPEC] Creating spec for task $task_num - $task_desc"
+    gecho "[SPEC] Creating spec for task $task_num - $task_desc"
 
     local spec_filename="$SPECS_DIR/${task_num}-$(echo "$task_desc" | tr ' ' '_' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_\-]//g').md"
 
@@ -1166,12 +1215,12 @@ spawn_spec_agent() {
     SPEC_START_TIME["SPEC-$task_num"]=$(date +%s)
 
     tglm "SPEC-$task_num" "$prompt" >/dev/null 2>&1
-    echo "[SPEC] Spec agent spawned for $task_num"
+    gecho "[SPEC] Spec agent spawned for $task_num"
 }
 
 cleanup_agent() {
     local agent="$1"
-    echo "[CLEN] Stopping agent $agent"
+    gecho "[CLEN] Stopping agent $agent"
     tstop "$agent" >/dev/null 2>&1
     # Reset warning count for this agent
     AGENT_WARNINGS[$agent]=0
@@ -1191,11 +1240,11 @@ check_spec_timeouts() {
         local start_time=${SPEC_START_TIME[$agent]:-0}
         local elapsed=$((current_time - start_time))
 
-        echo "[SPEC] Checking agent: $agent"
+        gecho "[SPEC] Checking agent: $agent"
 
         # Check if spec is now complete (>50 lines)
         if ! is_spec_placeholder "$task_num"; then
-            echo "[SPEC] $agent completed - spec is valid (>50 lines)"
+            gecho "[SPEC] $agent completed - spec is valid (>50 lines)"
             tstop "$agent" >/dev/null 2>&1
             unset "SPEC_START_TIME[$agent]"
             continue
@@ -1204,10 +1253,10 @@ check_spec_timeouts() {
         if [ "$start_time" -eq 0 ]; then
             # Spec agent not tracked, start timer now
             SPEC_START_TIME[$agent]=$current_time
-            echo "[SPEC] Logged start time"
+            gecho "[SPEC] Logged start time"
         elif [ "$elapsed" -ge "$SPEC_TIMEOUT" ]; then
             # Spec agent has timed out without producing valid spec
-            echo "[SPEC] $agent exceeded ${SPEC_TIMEOUT}s limit - terminating"
+            gecho "[SPEC] $agent exceeded ${SPEC_TIMEOUT}s limit - terminating"
             tstop "$agent" >/dev/null 2>&1
             unset "SPEC_START_TIME[$agent]"
         fi
@@ -1225,10 +1274,10 @@ cleanup_placeholder_specs() {
                 local spec_file=$(ls "$SPECS_DIR"/${task}-*.md 2>/dev/null | head -1)
                 if [ -f "$spec_file" ]; then
                     rm "$spec_file"
-                    echo "[CLEN] Deleted placeholder spec for $task (no active spec agent)"
+                    gecho "[CLEN] Deleted placeholder spec for $task (no active spec agent)"
                 fi
             else
-                echo "[PLCH] Task $task has placeholder spec and spec agent is active"
+                gecho "[PLCH] Task $task has placeholder spec and spec agent is active"
             fi
         fi
     done
@@ -1236,8 +1285,8 @@ cleanup_placeholder_specs() {
 
 generate_tasks() {
     local pending_count=$1
-    echo "[GENR] Pending tasks ($pending_count) below threshold ($NEW_TASK_REQUIRED)"
-    echo "[GENR] Spawning task generator agent"
+    gecho "[GENR] Pending tasks ($pending_count) below threshold ($NEW_TASK_REQUIRED)"
+    gecho "[GENR] Spawning task generator agent"
 
     local generator_prompt='## TASK DECOMPOSITION & QUEUE MANAGEMENT AGENT
 
@@ -1317,7 +1366,7 @@ generate_tasks() {
     ### INITIATE TASK SYNTHESIS'
 
     tglm "TASK-GENERATOR" "$generator_prompt" >/dev/null 2>&1
-    echo "[GENR] Task generator agent spawned"
+    gecho "[GENR] Task generator agent spawned"
 }
 
 check_agent_activity() {
@@ -1325,11 +1374,11 @@ check_agent_activity() {
 
     # Skip if agent is already marked as DONE or QA in KOLLABORATE.md
     if is_task_done "$agent"; then
-        echo "[SKIP] $agent is DONE/QA - skipping activity check"
+        gecho "[SKIP] $agent is DONE/QA - skipping activity check"
         return 0
     fi
 
-    echo "[MNTR] Checking activity for $agent..."
+    gecho "[MNTR] Checking activity for $agent..."
 
     # Take first snapshot
     local snapshot1=$(tcapture "$agent" 100 2>/dev/null)  # stderr only, need stdout
@@ -1349,14 +1398,14 @@ check_agent_activity() {
         ((warnings++))
         AGENT_WARNINGS[$agent]=$warnings
 
-        echo "[IDLE] $agent idle (warning $warnings/3)"
+        gecho "[IDLE] $agent idle (warning $warnings/3)"
 
         if [ "$warnings" -ge 3 ]; then
-            echo "[IDLE] $agent reached 3 warnings - terminating and recycling"
+            gecho "[IDLE] $agent reached 3 warnings - terminating and recycling"
 
             # Change WORKING: back to NEW: (keep dash format)
             sed -i '' "s/^WORKING: $agent -/NEW: $agent -/" "$KOLLABORATE_MD"
-            echo "[RCYL] $agent changed from WORKING to NEW"
+            gecho "[RCYL] $agent changed from WORKING to NEW"
 
             # Kill the agent
             tstop "$agent" >/dev/null 2>&1
@@ -1373,7 +1422,7 @@ check_agent_activity() {
     else
         # Agent is active - reset warnings and check for reminder
         AGENT_WARNINGS[$agent]=0
-        echo "[OKAY] $agent is working"
+        gecho "[OKAY] $agent is working"
 
         # Check if we should send a 2-minute reminder
         local current_time=$(date +%s)
@@ -1381,7 +1430,7 @@ check_agent_activity() {
         local time_since_reminder=$((current_time - last_reminder))
 
         if [ "$time_since_reminder" -ge "$REMINDER_INTERVAL" ]; then
-            echo "[RMND] Sending 2-minute reminder to $agent"
+            gecho "[RMND] Sending 2-minute reminder to $agent"
             tmsg "$agent" "[TEMPORAL CHECKPOINT] Execution window: 2 minutes remaining. Pre-completion validation required: build pipeline must terminate with zero-error status. Maintain execution focus and optimize for task completion velocity." >/dev/null 2>&1
             LAST_REMINDER[$agent]=$current_time
         fi
@@ -1411,26 +1460,26 @@ while true; do
     pending_count=$(echo "$pending_tasks" | grep -c '[FRBDTPASHMICEUVWX][0-9]' 2>/dev/null | tr -d '\n' || echo 0)
 
     spec_agent_count=$(get_spec_agent_count)
-    echo "[STAT] Agents: $active_count/$MAX_AGENTS | Specs: $spec_agent_count/$MAX_SPEC_AGENTS | Working: $working_count | QA: $qa_count | Pending: $pending_count"
+    gecho "[STAT] Agents: $active_count/$MAX_AGENTS | Specs: $spec_agent_count/$MAX_SPEC_AGENTS | Working: $working_count | QA: $qa_count | Pending: $pending_count"
  
 
     # Check for spec agent timeouts
-    echo "[STEP] Running check_spec_timeouts"
+    gecho "[STEP] Running check_spec_timeouts"
     check_spec_timeouts
     
     sleep 5
 
     # Clean up placeholder specs if no spec agent is active
-    echo "[STEP] Running cleanup_placeholder_specs"
+    gecho "[STEP] Running cleanup_placeholder_specs"
     cleanup_placeholder_specs
     
     
     # Check agents that should be cleaned up (task is DONE but agent still running)
-    echo "[STEP] Checking for agents to clean up"
+    gecho "[STEP] Checking for agents to clean up"
     for agent in "${active_agents[@]}"; do
         if [ -n "$agent" ]; then
             if is_task_done "$agent"; then
-                echo "[CLEN] $agent completed - cleaning up"
+                gecho "[CLEN] $agent completed - cleaning up"
                 cleanup_agent "$agent"
                 ((active_count--))
                 # Reset warning count for this agent
@@ -1440,18 +1489,18 @@ while true; do
     done
 
     # Check if TASK-GENERATOR should be cleaned up (queue replenished)
-    echo "[STEP] Checking TASK-GENERATOR cleanup"
+    gecho "[STEP] Checking TASK-GENERATOR cleanup"
     if tlist 2>/dev/null | grep -q "TASK-GENERATOR"; then
         if [ "$pending_count" -ge "$NEW_TASK_REQUIRED" ]; then
-            echo "[CLEN] TASK-GENERATOR completed - queue replenished ($pending_count >= $NEW_TASK_REQUIRED)"
+            gecho "[CLEN] TASK-GENERATOR completed - queue replenished ($pending_count >= $NEW_TASK_REQUIRED)"
             tstop TASK-GENERATOR >/dev/null 2>&1
         else
-            echo "[GENR] TASK-GENERATOR still working - queue at $pending_count (need $NEW_TASK_REQUIRED)"
+            gecho "[GENR] TASK-GENERATOR still working - queue at $pending_count (need $NEW_TASK_REQUIRED)"
         fi
     fi
 
     # Check for WORKING: tasks without active agents (only if there are working tasks)
-    echo "[STEP] Checking WORKING tasks without agents"
+    gecho "[STEP] Checking WORKING tasks without agents"
     if [ "$working_count" -gt 0 ]; then
         for task in "${working_tasks[@]}"; do
             if [ -n "$task" ]; then
@@ -1466,7 +1515,7 @@ while true; do
 
                 # If no active agent for this WORKING: task, set it back to NEW:
                 if [ "$has_agent" = false ]; then
-                    echo "[RCYL] $task has no agent - setting back to NEW"
+                    gecho "[RCYL] $task has no agent - setting back to NEW"
                     sed -i '' "s/^WORKING: $task -/NEW: $task -/" "$KOLLABORATE_MD"
                     ((working_count--))
                 fi
@@ -1475,19 +1524,19 @@ while true; do
     fi
 
     # Check for QA tasks that still have agents (should not happen but protect them)
-    echo "[STEP] Checking QA tasks with agents"
+    gecho "[STEP] Checking QA tasks with agents"
     for task in "${qa_tasks[@]}"; do
         if [ -n "$task" ]; then
             # Check if this QA task still has an agent
             for agent in "${active_agents[@]}"; do
                 if [ "$agent" = "$task" ]; then
-                    echo "[QA] $task has agent - keeping alive for review"
+                    gecho "[QA] $task has agent - keeping alive for review"
                     break
                 fi
             done
         fi
     done
-    echo "[STEP] Monitoring agent activity"
+    gecho "[STEP] Monitoring agent activity"
 
     # Monitor activity for remaining agents
     # Refresh active agents after cleanup
@@ -1507,18 +1556,18 @@ while true; do
     pending_count=$(echo "$pending_tasks" | grep -c '[FRBDTPASHMICEUVWX][0-9]' 2>/dev/null | tr -d '\n' || echo 0)
     
     spec_agent_count=$(get_spec_agent_count)
-    echo "[STAT] Agents: $active_count/$MAX_AGENTS | Specs: $spec_agent_count/$MAX_SPEC_AGENTS | Working: $working_count | QA: $qa_count | Pending: $pending_count"
+    gecho "[STAT] Agents: $active_count/$MAX_AGENTS | Specs: $spec_agent_count/$MAX_SPEC_AGENTS | Working: $working_count | QA: $qa_count | Pending: $pending_count"
 
-    echo "[STEP] Checking agent activity"
+    gecho "[STEP] Checking agent activity"
     for agent in "${active_agents[@]}"; do
         if [ -n "$agent" ]; then
             # Skip if this agent is already marked DONE
             if ! is_task_done "$agent"; then
-                echo "[MNTR] --- Agent Activity ---"
+                gecho "[MNTR] --- Agent Activity ---"
                 # Check if agent has a corresponding task in KOLLABORATE.md
-                echo "[CHCK] Verifying $agent has task in KOLLABORATE.md"
+                gecho "[CHCK] Verifying $agent has task in KOLLABORATE.md"
                 if [ -n "$agent" ] && ! grep -q "^WORKING: $agent -" "$KOLLABORATE_MD" && ! grep -q "^NEW: $agent -" "$KOLLABORATE_MD"; then
-                    echo "[WARN] $agent running without task assignment!"
+                    gecho "[WARN] $agent running without task assignment!"
                     tmsg "$agent" "[PROTOCOL VIOLATION] Agent $agent instantiated without corresponding task manifest entry in KOLLABORATE.md. This constitutes an orphaned execution state. Immediate remediation required: Register task assignment as 'WORKING: $agent - [task description]' in state manifest. Non-compliance triggers forced termination." >/dev/null 2>&1
 
                     # Mark this agent for termination on next cycle if they don't respond
@@ -1527,7 +1576,7 @@ while true; do
                     AGENT_WARNINGS[$agent]=$violations
 
                     if [ "$violations" -ge 2 ]; then
-                        echo "[KILL] $agent violated tracking rules - terminating"
+                        gecho "[KILL] $agent violated tracking rules - terminating"
 
                         # Terminate the violating agent
                         tstop "$agent" >/dev/null 2>&1
@@ -1536,14 +1585,14 @@ while true; do
                     fi
                 else
                     # Agent has task assignment - monitor activity
-                    echo "[CHCK] $agent has task - monitoring activity"
+                    gecho "[CHCK] $agent has task - monitoring activity"
                     check_agent_activity "$agent"
                     result=$?
 
                     if [ "$result" -eq 2 ]; then
                         # Agent was terminated and task recycled
                         ((active_count--))
-                        echo "[RCYL] $agent terminated, task recycled"
+                        gecho "[RCYL] $agent terminated, task recycled"
                     fi
                 fi
             fi
@@ -1551,16 +1600,16 @@ while true; do
     done
 
     # Refresh active agents after activity check
-    echo "[STEP] Refreshing agent list"
+    gecho "[STEP] Refreshing agent list"
     active_agents=($(get_active_agents))
     active_count=${#active_agents[@]}
 
     # Spawn new agents if under limit and we have pending tasks
-    echo "[STEP] Refreshing agent list"
+    gecho "[STEP] Refreshing agent list"
     slots=$((MAX_AGENTS - active_count))
 
     if [ "$slots" -gt 0 ] && [ "$pending_count" -gt 0 ]; then
-        echo "[SPWN] $slots slots available for $pending_count pending tasks"
+        gecho "[SPWN] $slots slots available for $pending_count pending tasks"
 
         # Check if there are pending fix tasks (R92-R107)
         has_pending_fix_tasks=$(echo "$pending_tasks" | sed -n 's/.*R\([0-9]\{1,\}\).*/\1/p' | while read num; do
@@ -1582,13 +1631,13 @@ while true; do
             # Block feature tasks (R108+) if fix tasks (R92-R107) are still pending
             # Note: This is project-specific logic - can be customized per project
             if [ "$task_num_int" -ge 108 ] && [ "$has_pending_fix_tasks" = "yes" ]; then
-                echo "[BLOK] $task_num blocked - fix tasks R92-R107 must complete first"
+                gecho "[BLOK] $task_num blocked - fix tasks R92-R107 must complete first"
                 continue
             fi
 
             # Check if agent already exists
             if tlist 2>/dev/null | grep -q "$task_num"; then
-                echo "[SYNC] $task_num already running, updating to WORKING"
+                gecho "[SYNC] $task_num already running, updating to WORKING"
                 sed -i '' "s/^NEW: $task_num -/WORKING: $task_num -/" "$KOLLABORATE_MD"
                 continue
             fi
@@ -1599,7 +1648,7 @@ while true; do
 
             if [ $spawn_result -eq 0 ]; then
                 # Agent spawned successfully, update to WORKING:
-                echo "[SYNC] $task_num changed from NEW to WORKING"
+                gecho "[SYNC] $task_num changed from NEW to WORKING"
                 sed -i '' "s/^NEW: $task_num -/WORKING: $task_num -/" "$KOLLABORATE_MD"
 
                 ((slots--))
@@ -1607,7 +1656,7 @@ while true; do
                 sleep 2
             else
                 # Agent not spawned due to missing spec, skip slot decrement
-                echo "[WAIT] $task_num waiting for spec"
+                gecho "[WAIT] $task_num waiting for spec"
                 # Don't decrement slots, continue to next task
                 continue
             fi
@@ -1615,19 +1664,19 @@ while true; do
     fi
 
     # PHASE 5: Check for missing specs and spawn spec agents
-    echo "[STEP] Checking for missing specs"
+    gecho "[STEP] Checking for missing specs"
     tasks_without_specs=$(get_new_tasks_without_specs)
     spec_count=$(echo "$tasks_without_specs" | grep -c '[FRBDTPASHMICEUVWX][0-9]' 2>/dev/null | tr -d '\n' || echo 0)
     active_spec_count=$(get_spec_agent_count)
 
     if [ "$spec_count" -gt 0 ]; then
-        echo "[SPEC] Found $spec_count tasks without specs | Active spec agents: $active_spec_count/$MAX_SPEC_AGENTS"
+        gecho "[SPEC] Found $spec_count tasks without specs | Active spec agents: $active_spec_count/$MAX_SPEC_AGENTS"
 
         # Calculate available spec agent slots
         spec_slots=$((MAX_SPEC_AGENTS - active_spec_count))
 
         if [ "$spec_slots" -le 0 ]; then
-            echo "[SPEC] At spec agent limit ($MAX_SPEC_AGENTS), waiting for slots..."
+            gecho "[SPEC] At spec agent limit ($MAX_SPEC_AGENTS), waiting for slots..."
         else
             echo "$tasks_without_specs" | while IFS= read -r task; do
                 [ -z "$task" ] && continue
@@ -1635,7 +1684,7 @@ while true; do
                 # Re-check available slots (may have changed in loop)
                 current_spec_count=$(get_spec_agent_count)
                 if [ "$current_spec_count" -ge "$MAX_SPEC_AGENTS" ]; then
-                    echo "[SPEC] Reached spec agent limit, deferring remaining tasks"
+                    gecho "[SPEC] Reached spec agent limit, deferring remaining tasks"
                     break
                 fi
 
@@ -1644,33 +1693,33 @@ while true; do
                 # is_spec_placeholder returns 1 (false) if spec is valid (>50 lines)
                 if ! is_spec_placeholder "$task"; then
                     # Spec is valid - no need to spawn spec agent
-                    echo "[SKIP] $task already has valid spec"
+                    gecho "[SKIP] $task already has valid spec"
                     continue
                 fi
 
                 # Check if spec agent is already running for this task
                 if ! tlist 2>/dev/null | grep -q "SPEC-$task"; then
-                    echo "[SPEC] Spawning agent for $task"
+                    gecho "[SPEC] Spawning agent for $task"
                     spawn_spec_agent "$task"
                     sleep 2
                 else
-                    echo "[SKIP] Spec agent already running for $task"
+                    gecho "[SKIP] Spec agent already running for $task"
                 fi
             done
         fi
     fi
 
     # Maintain 5 tasks in queue
-    echo "[GENR] Queue check: pending=$pending_count, required=$NEW_TASK_REQUIRED"
+    gecho "[GENR] Queue check: pending=$pending_count, required=$NEW_TASK_REQUIRED"
     if [ "$pending_count" -lt "$NEW_TASK_REQUIRED" ]; then
-        echo "[GENR] Triggering task generation"
+        gecho "[GENR] Triggering task generation"
         generate_tasks "$pending_count"
     else
-        echo "[GENR] Queue sufficient, no generation needed"
+        gecho "[GENR] Queue sufficient, no generation needed"
     fi
 
-    echo "[CYCL] =========================================="
-    echo "[CYCL] Waiting ${CHECK_INTERVAL}s for next interval..."
-    echo "[CYCL] =========================================="
+    gecho "[CYCL] =========================================="
+    gecho "[CYCL] Waiting ${CHECK_INTERVAL}s for next interval..."
+    gecho "[CYCL] =========================================="
     sleep "$CHECK_INTERVAL"
 done

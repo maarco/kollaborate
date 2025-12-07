@@ -7,28 +7,30 @@ set -e
 KOLLABORATE_HOME="${KOLLABORATE_HOME:-$(dirname "$(realpath "$0")")}"
 KOLLABORATE_VERSION="1.0.0"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
+# MAXIMUM BRIGHTNESS - Lime and Cyan theme with BOLD
+CYAN='\033[1;38;2;0;255;255m'    # BOLD + Maximum bright cyan (RGB)
+LIME='\033[1;38;2;0;255;0m'      # BOLD + Maximum bright lime green (RGB)
 NC='\033[0m' # No Color
+
+# Legacy color names mapped to new scheme
+RED="$LIME"
+GREEN="$LIME"
+YELLOW="$LIME"
+BLUE="$CYAN"
 
 print_banner() {
     echo "${CYAN}"
-    echo "╔═══════════════════════════════════════════════════════════════╗"
-    echo "║                                                               ║"
-    echo "║   ██╗  ██╗ ██████╗ ██╗     ██╗      █████╗ ██████╗            ║"
-    echo "║   ██║ ██╔╝██╔═══██╗██║     ██║     ██╔══██╗██╔══██╗           ║"
-    echo "║   █████╔╝ ██║   ██║██║     ██║     ███████║██████╔╝           ║"
-    echo "║   ██╔═██╗ ██║   ██║██║     ██║     ██╔══██║██╔══██╗           ║"
-    echo "║   ██║  ██╗╚██████╔╝███████╗███████╗██║  ██║██████╔╝           ║"
-    echo "║   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═════╝            ║"
-    echo "║                                                               ║"
-    echo "║   Autonomous Multi-Agent Development Framework v${KOLLABORATE_VERSION}         ║"
-    echo "║                                                               ║"
-    echo "╚═══════════════════════════════════════════════════════════════╝"
+    echo "╔══════════════════════════════════════════════════════╗"
+    echo "║                                                      ║"
+    echo "║   ██╗  ██╗ ██████╗ ██╗     ██╗      █████╗ ██████╗   ║"
+    echo "║   ██║ ██╔╝██╔═══██╗██║     ██║     ██╔══██╗██╔══██╗  ║"
+    echo "║   █████╔╝ ██║   ██║██║     ██║     ███████║██████╔╝  ║"
+    echo "║   ██╔═██╗ ██║   ██║██║     ██║     ██╔══██║██╔══██╗  ║"
+    echo "║   ██║  ██╗╚██████╔╝███████╗███████╗██║  ██║██████╔╝  ║"
+    echo "║   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═════╝   ║"
+    echo "║                Autonomous Multi-Agent                ║"
+    echo "║             Development Framework v${KOLLABORATE_VERSION}             ║"
+    echo "╚══════════════════════════════════════════════════════╝"
     echo "${NC}"
 }
 
@@ -441,14 +443,7 @@ cmd_init() {
     echo ""
 
     # Create directory structure
-    echo "${YELLOW}[STEP 1/4]${NC} Creating directory structure..."
-
-    if [[ ! -d ".kollaborate" ]]; then
-        mkdir -p .kollaborate
-        echo "  ${GREEN}+${NC} Created .kollaborate/"
-    else
-        echo "  ${YELLOW}~${NC} .kollaborate/ already exists"
-    fi
+    echo "${YELLOW}[STEP 1/2]${NC} Creating directory structure..."
 
     if [[ ! -d "specs" ]]; then
         mkdir -p specs
@@ -457,32 +452,27 @@ cmd_init() {
         echo "  ${YELLOW}~${NC} specs/ already exists"
     fi
 
-    # Copy kollaborate.sh
+    # Verify KOLLABORATE_HOME is set
     echo ""
-    echo "${YELLOW}[STEP 2/4]${NC} Installing agent watcher daemon..."
+    echo "${YELLOW}[STEP 2/2]${NC} Verifying Kollaborate installation..."
 
-    if [[ -f "$KOLLABORATE_HOME/kollaborate.sh" ]]; then
-        cp "$KOLLABORATE_HOME/kollaborate.sh" ".kollaborate/kollaborate.sh"
-        chmod +x ".kollaborate/kollaborate.sh"
-        echo "  ${GREEN}+${NC} Installed kollaborate.sh"
-    else
-        echo "  ${RED}!${NC} Error: kollaborate.sh not found at $KOLLABORATE_HOME"
-        echo "  ${RED}!${NC} Please ensure KOLLABORATE_HOME is set correctly"
+    if [[ -z "$KOLLABORATE_HOME" ]]; then
+        echo "  ${RED}!${NC} Error: KOLLABORATE_HOME not set"
+        echo "  ${RED}!${NC} Please run the installation script first"
         exit 1
     fi
 
-    # Copy documentation
-    echo ""
-    echo "${YELLOW}[STEP 3/4]${NC} Installing documentation..."
-
-    if [[ -f "$KOLLABORATE_HOME/kollaborate.md" ]]; then
-        cp "$KOLLABORATE_HOME/kollaborate.md" ".kollaborate/kollaborate.md"
-        echo "  ${GREEN}+${NC} Installed kollaborate.md"
+    if [[ ! -f "$KOLLABORATE_HOME/kollaborate.sh" ]]; then
+        echo "  ${RED}!${NC} Error: kollaborate.sh not found at $KOLLABORATE_HOME"
+        echo "  ${RED}!${NC} Please reinstall Kollaborate"
+        exit 1
     fi
+
+    echo "  ${GREEN}✓${NC} Found daemon at $KOLLABORATE_HOME/kollaborate.sh"
 
     # Create TASK_TRACKING.md
     echo ""
-    echo "${YELLOW}[STEP 4/4]${NC} Creating task tracking file..."
+    echo "${YELLOW}[TASK]${NC} Creating task tracking file..."
 
     if [[ ! -f "TASK_TRACKING.md" ]]; then
         cat > TASK_TRACKING.md << EOF
@@ -506,14 +496,14 @@ EOF
         echo "  ${YELLOW}~${NC} TASK_TRACKING.md already exists (skipped)"
     fi
 
-    # Add to .gitignore
+    # Add specs/ to .gitignore
     echo ""
     if [[ -f ".gitignore" ]]; then
-        if ! grep -q ".kollaborate/" ".gitignore" 2>/dev/null; then
+        if ! grep -q "specs/" ".gitignore" 2>/dev/null; then
             echo "" >> .gitignore
-            echo "# Kollaborate" >> .gitignore
-            echo ".kollaborate/" >> .gitignore
-            echo "  ${GREEN}+${NC} Added .kollaborate/ to .gitignore"
+            echo "# Kollaborate specifications" >> .gitignore
+            echo "specs/" >> .gitignore
+            echo "  ${GREEN}+${NC} Added specs/ to .gitignore"
         fi
     fi
 
@@ -549,13 +539,27 @@ cmd_start() {
         exit 1
     fi
 
+    # Verify KOLLABORATE_HOME is set
+    if [[ -z "$KOLLABORATE_HOME" ]]; then
+        echo "${RED}[ERROR]${NC} KOLLABORATE_HOME not set"
+        echo "Please run the installation script first"
+        exit 1
+    fi
+
+    if [[ ! -f "$KOLLABORATE_HOME/kollaborate.sh" ]]; then
+        echo "${RED}[ERROR]${NC} Daemon not found at $KOLLABORATE_HOME/kollaborate.sh"
+        echo "Please reinstall Kollaborate"
+        exit 1
+    fi
+
     print_banner
     echo "${BLUE}[START]${NC} Launching agent watcher daemon..."
+    echo "${BLUE}[START]${NC} Daemon: ${CYAN}$KOLLABORATE_HOME/kollaborate.sh${NC}"
     echo "${BLUE}[START]${NC} Max task agents: ${CYAN}$max_agents${NC}"
     echo "${BLUE}[START]${NC} Max spec agents: ${CYAN}$max_spec_agents${NC}"
     echo ""
 
-    exec ./.kollaborate/kollaborate.sh "$max_agents" "$max_spec_agents"
+    exec "$KOLLABORATE_HOME/kollaborate.sh" "$max_agents" "$max_spec_agents"
 }
 
 cmd_status() {
