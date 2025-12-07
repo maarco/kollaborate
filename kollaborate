@@ -43,6 +43,7 @@ print_help() {
     echo "  ${GREEN}start${NC} [agents]    Start the agent watcher daemon"
     echo "  ${GREEN}status${NC}            Show current task and agent status"
     echo "  ${GREEN}add${NC} <type> <task> Add a new task to the queue"
+    echo "  ${GREEN}use${NC} <backend>     Switch LLM backend (claude, gemini, crush, codex, etc.)"
     echo "  ${GREEN}help${NC}              Show this help message"
     echo "  ${GREEN}version${NC}           Show version information"
     echo ""
@@ -681,6 +682,67 @@ cmd_version() {
     echo "Autonomous Multi-Agent Development Framework"
 }
 
+cmd_use() {
+    local backend="$1"
+
+    if [[ -z "$backend" ]]; then
+        # Show current backend and available options
+        print_banner
+        echo "${BLUE}[CURRENT]${NC} GLM Backend: ${CYAN}${GLM_BACKEND:-claude}${NC}"
+        echo ""
+        echo "Available backends:"
+        echo "  ${LIME}claude${NC}      - Anthropic Claude (--dangerously-skip-permissions)"
+        echo "  ${LIME}gemini${NC}      - Google Gemini (--yolo)"
+        echo "  ${LIME}crush${NC}       - Crush AI (--yolo)"
+        echo "  ${LIME}codex${NC}       - Codex (--sandbox danger-full-access)"
+        echo "  ${LIME}opencode${NC}    - OpenCode"
+        echo "  ${LIME}cursor${NC}      - Cursor AI"
+        echo "  ${LIME}<custom>${NC}    - Any custom LLM CLI"
+        echo ""
+        echo "Usage: kollaborate use <backend>"
+        echo "Example: kollaborate use gemini"
+        return 0
+    fi
+
+    # Set the backend
+    export GLM_BACKEND="$backend"
+
+    # Update shell RC to persist the change
+    local shell_rc=""
+    if [[ -n "$ZSH_VERSION" ]]; then
+        shell_rc="$HOME/.zshrc"
+    elif [[ -n "$BASH_VERSION" ]]; then
+        shell_rc="$HOME/.bashrc"
+    else
+        shell_rc="$HOME/.profile"
+    fi
+
+    # Remove old GLM_BACKEND export if exists and add new one
+    if [[ -f "$shell_rc" ]]; then
+        # Create temp file for safe editing (handles symlinks)
+        local temp_file=$(mktemp)
+        grep -v '^export GLM_BACKEND=' "$shell_rc" > "$temp_file" 2>/dev/null || cat "$shell_rc" > "$temp_file"
+
+        # Add new GLM_BACKEND export after KOLLABORATE_HOME
+        if grep -q "export KOLLABORATE_HOME" "$temp_file"; then
+            awk -v backend="$backend" '/export KOLLABORATE_HOME/ {print; print "export GLM_BACKEND=\"" backend "\""; next} 1' "$temp_file" > "${temp_file}.new"
+            mv "${temp_file}.new" "$temp_file"
+        else
+            echo "export GLM_BACKEND=\"$backend\"" >> "$temp_file"
+        fi
+
+        # Replace original file
+        cat "$temp_file" > "$shell_rc"
+        rm "$temp_file"
+    fi
+
+    echo "${GREEN}[UPDATED]${NC} GLM backend set to: ${CYAN}$backend${NC}"
+    echo "${BLUE}[INFO]${NC}    Changes saved to $shell_rc"
+    echo ""
+    echo "To use immediately in this shell:"
+    echo "  ${CYAN}export GLM_BACKEND=\"$backend\"${NC}"
+}
+
 # Parse arguments
 PROJECT_TYPE=""
 MAX_AGENTS=""
@@ -702,7 +764,7 @@ while [[ $# -gt 0 ]]; do
             MAX_SPEC_AGENTS="$2"
             shift 2
             ;;
-        init|start|status|add|help|version|-h|--help|-v|--version)
+        init|start|status|add|use|help|version|-h|--help|-v|--version)
             if [[ -z "$COMMAND" ]]; then
                 COMMAND="$1"
             else
@@ -730,6 +792,9 @@ case "${COMMAND:-help}" in
         ;;
     add)
         cmd_add "${ARGS[1]}" "${ARGS[2]}" "${ARGS[3]}"
+        ;;
+    use)
+        cmd_use "${ARGS[1]}"
         ;;
     version|-v|--version)
         cmd_version
