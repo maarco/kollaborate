@@ -40,7 +40,17 @@ glm() {
             fi
             ;;
 
-        gemini|opencode|*)
+        gemini)
+            # Gemini CLI wrapper with YOLO mode (auto-accept actions)
+            if [ -p /dev/stdin ]; then
+                local piped_input=$(cat)
+                gemini --yolo "$@" <<< "$piped_input"
+            else
+                gemini --yolo "$@"
+            fi
+            ;;
+
+        opencode|*)
             # Generic wrapper for other LLM CLIs
             # Uses the backend name as the command
             local cmd="${GLM_BACKEND}"
