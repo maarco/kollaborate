@@ -7,10 +7,13 @@
 #
 # Configuration:
 #   Set GLM_BACKEND to choose your LLM:
-#     export GLM_BACKEND="claude"    # Default
-#     export GLM_BACKEND="gemini"
-#     export GLM_BACKEND="opencode"
-#     export GLM_BACKEND="custom-llm"
+#     export GLM_BACKEND="claude"      # Default - Anthropic Claude
+#     export GLM_BACKEND="gemini"      # Google Gemini
+#     export GLM_BACKEND="crush"       # Crush AI
+#     export GLM_BACKEND="codex"       # Codex
+#     export GLM_BACKEND="opencode"    # OpenCode
+#     export GLM_BACKEND="cursor"      # Cursor AI (if available)
+#     export GLM_BACKEND="custom-llm"  # Any custom CLI
 #
 # Custom API Settings (optional):
 #   export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic"
@@ -50,9 +53,29 @@ glm() {
             fi
             ;;
 
+        crush)
+            # Crush CLI wrapper with YOLO mode (auto-accept all permissions)
+            if [ -p /dev/stdin ]; then
+                local piped_input=$(cat)
+                crush --yolo "$@" <<< "$piped_input"
+            else
+                crush --yolo "$@"
+            fi
+            ;;
+
+        codex)
+            # Codex CLI wrapper with danger-full-access sandbox mode
+            if [ -p /dev/stdin ]; then
+                local piped_input=$(cat)
+                codex --sandbox danger-full-access "$@" <<< "$piped_input"
+            else
+                codex --sandbox danger-full-access "$@"
+            fi
+            ;;
+
         opencode|*)
             # Generic wrapper for other LLM CLIs
-            # Uses the backend name as the command
+            # Uses the backend name as the command without special flags
             local cmd="${GLM_BACKEND}"
 
             if [ -p /dev/stdin ]; then
@@ -71,7 +94,14 @@ glm_use() {
         echo "Current GLM backend: $GLM_BACKEND"
         echo ""
         echo "Usage: glm_use <backend>"
-        echo "Available backends: claude, gemini, opencode, or custom CLI name"
+        echo "Available backends:"
+        echo "  - claude      (Anthropic Claude)"
+        echo "  - gemini      (Google Gemini)"
+        echo "  - crush       (Crush AI)"
+        echo "  - codex       (Codex)"
+        echo "  - opencode    (OpenCode)"
+        echo "  - cursor      (Cursor AI)"
+        echo "  - <custom>    (Any custom CLI name)"
         return 1
     fi
 
