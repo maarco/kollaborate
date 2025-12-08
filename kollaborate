@@ -528,15 +528,10 @@ cmd_start() {
     local max_agents="${1:-3}"
     local max_spec_agents="${2:-2}"
 
-    if [[ ! -f ".kollaborate/kollaborate.sh" ]]; then
+    # Check if TASK_TRACKING.md exists (project is initialized)
+    if [[ ! -f "TASK_TRACKING.md" ]]; then
         echo "${RED}[ERROR]${NC} Kollaborate not initialized in this directory"
         echo "Run ${CYAN}kollaborate init${NC} first"
-        exit 1
-    fi
-
-    if [[ ! -f "TASK_TRACKING.md" ]]; then
-        echo "${RED}[ERROR]${NC} TASK_TRACKING.md not found"
-        echo "Run ${CYAN}kollaborate init${NC} to create it"
         exit 1
     fi
 
