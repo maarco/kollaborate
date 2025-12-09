@@ -44,6 +44,7 @@ print_help() {
     echo "  ${GREEN}status${NC}            Show current task and agent status"
     echo "  ${GREEN}add${NC} <type> <task> Add a new task to the queue"
     echo "  ${GREEN}use${NC} <backend>     Switch LLM backend (claude, gemini, crush, codex, etc.)"
+    echo "  ${GREEN}prompt${NC}            Generate AI assistant context for Kollaborate"
     echo "  ${GREEN}help${NC}              Show this help message"
     echo "  ${GREEN}version${NC}           Show version information"
     echo ""
@@ -677,6 +678,244 @@ cmd_version() {
     echo "Autonomous Multi-Agent Development Framework"
 }
 
+cmd_prompt() {
+    cat << 'EOF'
+# KOLLABORATE AI ASSISTANT CONTEXT
+
+## What is Kollaborate?
+
+Kollaborate is an autonomous multi-agent development framework that orchestrates multiple AI agents working in parallel on complex software projects. It uses a task-based workflow with typed specifications and automatic agent spawning.
+
+## Project Status Detection
+
+Check if the current directory is a Kollaborate project:
+```bash
+ls TASK_TRACKING.md    # If exists, project is initialized
+```
+
+## Setup for NEW Projects
+
+```bash
+# 1. Initialize Kollaborate
+kollaborate init
+
+# 2. Switch LLM backend (if not using claude)
+kollaborate use gemini    # or: claude, crush, codex, opencode, cursor
+
+# 3. Start the agent watcher daemon
+kollaborate start 3 2     # 3 task agents, 2 spec agents
+```
+
+## Setup for EXISTING Kollaborate Projects
+
+```bash
+# 1. Check current status
+kollaborate status
+
+# 2. Check/switch LLM backend if needed
+kollaborate use           # Shows current backend
+kollaborate use gemini    # Switch if needed
+
+# 3. Start the daemon
+kollaborate start 3 2
+```
+
+## Task Management
+
+### Add Tasks
+```bash
+kollaborate add feature "User authentication" src/auth.js
+kollaborate add bug "Fix memory leak" src/pool.js
+kollaborate add test "Add integration tests" tests/api.test.js
+```
+
+### Task Types (17 types available)
+- **feature** (F##) - New functionality
+- **refactor** (R##) - Code quality improvements
+- **bug** (B##) - Fixes and corrections
+- **test** (T##) - Test coverage
+- **doc** (D##) - Documentation
+- **perf** (P##) - Performance optimization
+- **arch** (A##) - Architecture/design
+- **security** (S##) - Security hardening
+- **hotfix** (H##) - Urgent production fixes
+- **migration** (M##) - Database migrations
+- **integration** (I##) - Third-party integrations
+- **chore** (C##) - Maintenance tasks
+- **experiment** (E##) - POC/spike work
+- **ux** (U##) - User experience
+- **validation** (V##) - Data validation
+- **workflow** (W##) - CI/CD/automation
+- **exploration** (X##) - Research tasks
+
+### Task Format in TASK_TRACKING.md
+```
+NEW: F01 - User authentication (file: src/auth.js)
+WORKING: R02 - Refactor API handlers
+DONE: T03 - Add unit tests
+QA: B04 - Fix login bug
+BLOCKED: D05 - API documentation [waiting for spec review]
+```
+
+## Agent Commands (TMUX-based)
+
+```bash
+tglm agent-name "task prompt"    # Create agent session
+tlist                             # List active agents
+tcapture agent-name               # View agent output
+tmsg agent-name "message"         # Send message to agent
+tstop agent-name                  # Stop agent
+```
+
+## Multi-LLM Backend Support
+
+Supported backends with auto-accept modes:
+- **claude**: --dangerously-skip-permissions
+- **gemini**: --yolo
+- **crush**: --yolo
+- **codex**: --sandbox danger-full-access
+- **opencode**: (no special flags)
+- **cursor**: (generic)
+
+Switch backends:
+```bash
+kollaborate use gemini
+export GLM_BACKEND="gemini"    # Use immediately in current shell
+```
+
+## Architecture
+
+### Agent Lifecycle
+1. NEW tasks → Spec agent generates detailed requirements (min 50 lines)
+2. Spec complete → Task agent spawns to implement
+3. Activity monitoring → 3-strike idle detection
+4. Task complete → Agent cleanup (DONE/QA status)
+
+### Task State Machine
+```
+NEW → WORKING → DONE/QA
+  ↓       ↓
+BLOCKED  ← (recycled if agent goes idle)
+```
+
+### File Structure
+```
+project/
+├── TASK_TRACKING.md      # Task manifest
+└── specs/                # Generated specifications
+    ├── F01-auth.md
+    ├── R02-refactor.md
+    └── T03-tests.md
+```
+
+### Daemon Configuration
+Edit these in kollaborate.sh (if needed):
+- MAX_AGENTS=3              # Concurrent task agents
+- MAX_SPEC_AGENTS=2         # Concurrent spec agents
+- CHECK_INTERVAL=60         # Monitoring cycle (seconds)
+- NEW_TASK_REQUIRED=5       # Min queue size
+- SPEC_TIMEOUT=300          # Spec generation timeout
+
+## Common Workflows
+
+### Starting Fresh
+```bash
+kollaborate init
+kollaborate add feature "Initial feature" src/main.js
+kollaborate start
+```
+
+### Resuming Work
+```bash
+kollaborate status          # Check current state
+tlist                       # Check running agents
+kollaborate start           # Restart if needed
+```
+
+### Adding Multiple Tasks
+```bash
+kollaborate add feature "User login" src/auth/login.js
+kollaborate add feature "User signup" src/auth/signup.js
+kollaborate add test "Auth tests" tests/auth.test.js
+kollaborate add doc "API documentation" docs/api.md
+```
+
+### Switching LLM Backend
+```bash
+kollaborate use              # Show current
+kollaborate use gemini       # Switch to Gemini
+export GLM_BACKEND="gemini"  # Use immediately
+```
+
+## Monitoring & Troubleshooting
+
+```bash
+# Check task status
+kollaborate status
+
+# List active agents
+tlist
+
+# View agent output
+tcapture agent-name 50    # Last 50 lines
+
+# Send message to agent
+tmsg agent-name "Please focus on error handling"
+
+# Stop specific agent
+tstop agent-name
+
+# Stop all agents
+tlist | grep -v SESSION | awk '{print $1}' | xargs -I {} tstop {}
+```
+
+## Key Files
+
+- **TASK_TRACKING.md**: Task manifest with states
+- **specs/TYPE##-name.md**: Generated specifications
+- **~/.kollaborate/**: Global installation
+  - kollaborate (CLI)
+  - kollaborate.sh (Daemon)
+  - kollab-commands.sh (Agent commands)
+  - glm-setup.sh (LLM wrapper)
+
+## Important Notes
+
+1. **Always initialize first**: Run `kollaborate init` for new projects
+2. **Check before starting**: Use `kollaborate status` to see current state
+3. **One daemon per project**: Don't run multiple daemons in same directory
+4. **Task format matters**: Always use "TYPE## - description (file: path)"
+5. **Specs are required**: Agents wait for 50+ line specs before starting
+6. **Activity monitoring**: Idle agents get 3 warnings before termination
+
+## Help Commands
+
+```bash
+kollaborate help      # Show main help
+kollaborate version   # Show version
+kollaborate prompt    # Show this context (for AI assistants)
+```
+
+## Installation (if not installed)
+
+```bash
+# Remote installation
+curl -fsSL https://raw.githubusercontent.com/maarco/kollaborate/main/install.sh | zsh
+source ~/.zshrc
+
+# Local installation
+git clone https://github.com/maarco/kollaborate.git
+cd kollaborate
+./install.sh
+source ~/.zshrc
+```
+
+---
+
+This context should help AI assistants understand and work with Kollaborate effectively.
+EOF
+}
+
 cmd_use() {
     local backend="$1"
 
@@ -759,7 +998,7 @@ while [[ $# -gt 0 ]]; do
             MAX_SPEC_AGENTS="$2"
             shift 2
             ;;
-        init|start|status|add|use|help|version|-h|--help|-v|--version)
+        init|start|status|add|use|prompt|help|version|-h|--help|-v|--version)
             if [[ -z "$COMMAND" ]]; then
                 COMMAND="$1"
             else
@@ -790,6 +1029,9 @@ case "${COMMAND:-help}" in
         ;;
     use)
         cmd_use "${ARGS[1]}"
+        ;;
+    prompt)
+        cmd_prompt
         ;;
     version|-v|--version)
         cmd_version
