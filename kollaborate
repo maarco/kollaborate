@@ -925,10 +925,22 @@ Supported backends with auto-accept modes:
 - **opencode**: (no special flags)
 - **cursor**: (generic)
 
-Switch backends:
+**Switch backends permanently:**
 ```bash
-kollaborate use gemini
-export GLM_BACKEND="gemini"    # Use immediately in current shell
+kollaborate use gemini    # Adds 'export GLM_BACKEND="gemini"' to ~/.zshrc
+source ~/.zshrc           # Or open new terminal
+```
+
+**Set backend temporarily (current shell only):**
+```bash
+export GLM_BACKEND="gemini"    # Only for this shell session
+glm "your prompt"              # Uses gemini
+```
+
+**Set default in ~/.zshrc manually:**
+```bash
+echo 'export GLM_BACKEND="gemini"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 ## Architecture
