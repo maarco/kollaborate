@@ -749,13 +749,32 @@ kollaborate add test "Add integration tests" tests/api.test.js
 - **exploration** (X##) - Research tasks
 
 ### Task Format in TASK_TRACKING.md
+
+**Required Format:**
+```
+STATE: TYPE## - Description (file: path/to/file.ext)
+```
+
+**Components:**
+- **STATE**: NEW, WORKING, DONE, QA, or BLOCKED
+- **TYPE##**: Task type prefix (F, R, B, T, etc.) + sequential number
+- **Description**: Clear task description
+- **(file: path)**: REQUIRED - Target file path
+
+**Examples:**
 ```
 NEW: F01 - User authentication (file: src/auth.js)
-WORKING: R02 - Refactor API handlers
-DONE: T03 - Add unit tests
-QA: B04 - Fix login bug
-BLOCKED: D05 - API documentation [waiting for spec review]
+WORKING: R02 - Refactor API handlers (file: src/api/handlers.js)
+DONE: T03 - Add unit tests (file: tests/auth.test.js)
+QA: B04 - Fix login bug (file: src/auth/login.js)
+BLOCKED: D05 - API documentation [waiting for spec review] (file: docs/api.md)
 ```
+
+**Critical Rules:**
+1. Must include `(file: path)` - tasks without file paths are INVALID
+2. Task numbers are sequential per type (F01, F02, R01, R02, etc.)
+3. State must be one of: NEW, WORKING, DONE, QA, BLOCKED
+4. Description should be concise but clear
 
 ## Agent Commands (TMUX-based)
 
