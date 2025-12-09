@@ -730,23 +730,64 @@ kollaborate add test "Add integration tests" tests/api.test.js
 ```
 
 ### Task Types (17 types available)
-- **feature** (F##) - New functionality
-- **refactor** (R##) - Code quality improvements
-- **bug** (B##) - Fixes and corrections
-- **test** (T##) - Test coverage
-- **doc** (D##) - Documentation
-- **perf** (P##) - Performance optimization
-- **arch** (A##) - Architecture/design
-- **security** (S##) - Security hardening
-- **hotfix** (H##) - Urgent production fixes
-- **migration** (M##) - Database migrations
-- **integration** (I##) - Third-party integrations
-- **chore** (C##) - Maintenance tasks
-- **experiment** (E##) - POC/spike work
-- **ux** (U##) - User experience
-- **validation** (V##) - Data validation
-- **workflow** (W##) - CI/CD/automation
-- **exploration** (X##) - Research tasks
+
+**IMPORTANT: Each task type has a SPECIFIC purpose. Using the wrong type (especially R## for everything) will cause issues.**
+
+- **F## (feature)** - NEW functionality that didn't exist before
+  - Examples: "Add user login", "Implement payment processing", "Create dashboard"
+  - NOT for: Fixing bugs, testing, refactoring existing code
+
+- **R## (refactor)** - RESTRUCTURING existing code WITHOUT changing behavior
+  - Examples: "Extract helper functions", "Rename variables for clarity", "Reorganize modules"
+  - NOT for: Adding features, fixing bugs, debugging, verifying functionality
+
+- **B## (bug)** - FIXING incorrect behavior or errors
+  - Examples: "Fix memory leak", "Debug crash on startup", "Resolve login failure"
+  - NOT for: Adding features, refactoring, verification tasks
+
+- **T## (test)** - ADDING or improving tests
+  - Examples: "Add unit tests", "Verify integration works", "Test edge cases"
+  - NOT for: Debugging bugs, adding features, refactoring
+
+- **D## (doc)** - DOCUMENTATION only
+  - Examples: "Write API docs", "Add README", "Document configuration"
+  - NOT for: Code changes, testing
+
+- **P## (perf)** - PERFORMANCE optimization
+  - Examples: "Optimize database queries", "Reduce bundle size", "Cache frequently accessed data"
+
+- **A## (arch)** - ARCHITECTURE and design decisions
+  - Examples: "Design authentication system", "Plan microservices structure"
+
+- **S## (security)** - SECURITY hardening
+  - Examples: "Add input sanitization", "Implement rate limiting", "Audit for vulnerabilities"
+
+- **H## (hotfix)** - URGENT production fixes
+  - Examples: "Fix production crash", "Patch security vulnerability NOW"
+
+- **M## (migration)** - DATABASE schema changes
+  - Examples: "Add users table", "Migrate to new schema", "Data transformation script"
+
+- **I## (integration)** - THIRD-PARTY service integration
+  - Examples: "Integrate Stripe", "Add Slack webhooks", "Connect to AWS S3"
+
+- **C## (chore)** - MAINTENANCE tasks
+  - Examples: "Update dependencies", "Clean up old files", "Upgrade Node version"
+
+- **E## (experiment)** - PROOF-OF-CONCEPT work
+  - Examples: "Spike: Test WebAssembly performance", "POC: Real-time collaboration"
+
+- **U## (ux)** - USER EXPERIENCE improvements
+  - Examples: "Improve button accessibility", "Add loading indicators", "Enhance mobile layout"
+
+- **V## (validation)** - DATA VALIDATION logic
+  - Examples: "Add email validation", "Enforce password rules", "Validate API inputs"
+
+- **W## (workflow)** - CI/CD and automation
+  - Examples: "Setup GitHub Actions", "Add deployment pipeline", "Automate testing"
+
+- **X## (exploration)** - RESEARCH and investigation
+  - Examples: "Research best practices", "Investigate performance issue", "Explore alternative approaches"
 
 ### Task Format in TASK_TRACKING.md
 
@@ -761,20 +802,108 @@ STATE: TYPE## - Description (file: path/to/file.ext)
 - **Description**: Clear task description
 - **(file: path)**: REQUIRED - Target file path
 
-**Examples:**
+**Real-World Examples:**
 ```
-NEW: F01 - User authentication (file: src/auth.js)
-WORKING: R02 - Refactor API handlers (file: src/api/handlers.js)
-DONE: T03 - Add unit tests (file: tests/auth.test.js)
-QA: B04 - Fix login bug (file: src/auth/login.js)
-BLOCKED: D05 - API documentation [waiting for spec review] (file: docs/api.md)
+DONE: T1 - Add comprehensive security tests (file: src/tests/security.test.js)
+DONE: F1 - Implement OAuth2 provider integration with Google and GitHub (file: src/services/oauth2Service.js)
+DONE: R31 - Create automated MongoDB backup script with retention policy (file: scripts/automated-backup-cli.js)
+DONE: F2 - Build role-based access control (RBAC) system with permissions matrix (file: src/models/Role.js)
+DONE: T2 - Add comprehensive load testing suite with Artillery or K6 (file: tests/performance/)
+DONE: W1 - Setup CI/CD pipeline with GitHub Actions (file: .github/workflows/ci-cd.yml)
+DONE: D1 - API endpoint documentation (file: docs/API.md)
+DONE: I2 - Create integration with log aggregation system (file: src/utils/logAggregator.js)
+DONE: M1 - Build multi-tenant support for authentication microservice (file: src/models/Tenant.js)
+DONE: P1 - Implement advanced analytics and reporting dashboard (file: src/services/analyticsService.js)
+DONE: S1 - Create comprehensive API key management system (file: src/models/ApiKey.js)
 ```
 
 **Critical Rules:**
-1. Must include `(file: path)` - tasks without file paths are INVALID
-2. Task numbers are sequential per type (F01, F02, R01, R02, etc.)
-3. State must be one of: NEW, WORKING, DONE, QA, BLOCKED
-4. Description should be concise but clear
+1. **MUST include `(file: path)`** - tasks without file paths are INVALID
+2. **Use APPROPRIATE task types** - Don't use R## for everything:
+   - NEW features = F## (not R##)
+   - Bug fixes = B## (not R##)
+   - Tests = T## (not R##)
+   - Documentation = D## (not R##)
+   - Refactoring = R## (only for code restructuring)
+3. **Task numbers are sequential per type**: F01, F02, F03, R01, R02, T01, T02, etc.
+4. **State must be**: NEW, WORKING, DONE, QA, or BLOCKED
+5. **Description should be concise but clear**
+
+**COMMON MISTAKE: Using R## (refactor) for everything**
+
+**WRONG Examples (DO NOT DO THIS):**
+```
+❌ NEW: R1 - Replace main.rs with Application struct usage
+   Why wrong? Missing (file: path)
+
+❌ NEW: R2 - Debug window creation and wgpu device initialization
+   Why wrong? "Debug" = B## (bug fix), NOT R## (refactor)
+
+❌ NEW: R3 - Verify event loop integration
+   Why wrong? "Verify" = T## (test), NOT R## (refactor). Also missing (file: path)
+
+❌ NEW: R4 - Debug rendering pipeline TextureAtlas and shader compilation
+   Why wrong? "Debug" = B## (bug fix), NOT R## (refactor)
+
+❌ NEW: R5 - Verify font atlas generation and glyph metrics
+   Why wrong? "Verify" = T## (test) or X## (exploration), NOT R## (refactor)
+
+❌ NEW: R6 - Debug text positioning and projection matrix
+   Why wrong? "Debug" = B## (bug fix), NOT R## (refactor)
+
+❌ NEW: R7 - Verify RenderContext batching and scissor rects
+   Why wrong? "Verify" = T## (test), NOT R## (refactor)
+
+❌ NEW: R8 - Verify widget tree structure and Taffy layout bounds
+   Why wrong? "Verify" = T## (test), NOT R## (refactor)
+
+❌ NEW: R9 - Debug event dispatch and hit-testing
+   Why wrong? "Debug" = B## (bug fix), NOT R## (refactor)
+
+❌ NEW: R10 - Test button interactions hover and click callbacks
+   Why wrong? "Test" = T## (test), NOT R## (refactor)
+
+❌ NEW: R11 - Verify focus management and Tab key navigation
+   Why wrong? "Verify" = T## (test), NOT R## (refactor)
+
+❌ NEW: R12 - Verify editor content renders with line numbers
+   Why wrong? "Verify" = T## (test), NOT R## (refactor)
+```
+
+**CORRECT Examples (with proper types and file paths):**
+```
+✓ NEW: R1 - Replace main.rs with Application struct usage (file: crates/kollabor/src/main.rs)
+  Correct: Actually IS refactoring (restructuring code)
+
+✓ NEW: B1 - Debug window creation and wgpu device initialization (file: crates/native_app/src/window.rs)
+  Correct: Debugging = B## (bug fix)
+
+✓ NEW: T1 - Verify event loop integration and WindowEvent handling (file: crates/native_app/src/app.rs)
+  Correct: Verification = T## (test)
+
+✓ NEW: B2 - Debug rendering pipeline TextureAtlas and shader compilation (file: crates/kollabor-editor/src/gpu/pipeline.rs)
+  Correct: Debugging = B## (bug fix)
+
+✓ NEW: X1 - Verify font atlas generation and glyph metrics (file: crates/kollabor-editor/src/gpu/atlas.rs)
+  Correct: Investigation/verification = X## (exploration) or T## (test)
+
+✓ NEW: T2 - Test button interactions hover and click callbacks (file: crates/native_app/src/widgets/button.rs)
+  Correct: Testing = T## (test)
+
+✓ NEW: T3 - Verify focus management and Tab key navigation (file: crates/native_app/src/widgets/widget.rs)
+  Correct: Verification = T## (test)
+```
+
+**Quick Decision Guide:**
+- Adding NEW functionality? → F## (feature)
+- Fixing broken code? → B## (bug)
+- Testing/verifying something works? → T## (test) or X## (exploration)
+- Restructuring existing code without changing behavior? → R## (refactor)
+- Writing docs only? → D## (doc)
+- Need it NOW in production? → H## (hotfix)
+- Optimizing speed/performance? → P## (perf)
+- Third-party integration? → I## (integration)
+- Database schema change? → M## (migration)
 
 ## Agent Commands (TMUX-based)
 
